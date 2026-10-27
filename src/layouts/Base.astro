@@ -1,0 +1,137 @@
+---
+import '../styles/global.css';
+import { src } from '../lib/base';
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description = '个人作品集 · 新媒体交互设计' } = Astro.props;
+const canonical = new URL(src(''), Astro.site).href;
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <meta name="generator" content={Astro.generator} />
+
+    <link rel="icon" type="image/svg+xml" href={src('favicon.svg')} />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+
+    <script is:inline>
+      // 在首屏渲染前决定主题，避免闪烁
+      (() => {
+        const saved = localStorage.getItem('theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const theme = saved ?? (prefersDark ? 'dark' : 'light');
+        document.documentElement.dataset.theme = theme;
+      })();
+    </script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">跳到主要内容</a>
+    <div class="glow" id="glow" aria-hidden="true"></div>
+    <slot />
+
+    <script>
+      // 主题切换
+      const root = document.documentElement;
+      const btn = document.querySelector<HTMLButtonElement>('[data-theme-toggle]');
+      btn?.addEventListener('click', () => {
+        const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
+        root.dataset.theme = next;
+        localStorage.setItem('theme', next);
+      });
+
+      // 导航吸顶阴影
+      const nav = document.querySelector('[data-nav]');
+      const onScroll = () => nav?.classList.toggle('is-stuck', window.scrollY > 8);
+      onScroll();
+      window.addEventListener('scroll', onScroll, { passive: true });
+
+      // 移动端菜单
+      const burger = document.querySelector<HTMLButtonElement>('[data-burger]');
+      const links = document.querySelector('[data-nav-links]');
+      burger?.addEventListener('click', () => {
+        const open = burger.classList.toggle('is-open');
+        links?.classList.toggle('is-open', open);
+        burger.setAttribute('aria-expanded', String(open));
+      });
+      links?.querySelectorAll('a').forEach((a) =>
+        a.addEventListener('click', () => {
+          burger?.classList.remove('is-open');
+          links?.classList.remove('is-open');
+          burger?.setAttribute('aria-expanded', 'false');
+        }),
+      );
+
+      // 滚动进场
+      const reveals = document.querySelectorAll<HTMLElement>('.reveal');
+      if (reveals.length) {
+        const io = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry, i) => {
+              if (!entry.isIntersecting) return;
+              const el = entry.target as HTMLElement;
+              const delay = Number(el.dataset.delay ?? 0);
+              setTimeout(() => el.classList.add('is-visible'), delay);
+              io.unobserve(el);
+            });
+          },
+          { threshold: 0.12, rootMargin: '0px 0px -40px 0px' },
+        );
+        reveals.forEach((el) => io.observe(el));
+      }
+
+      // 鼠标光晕
+      const glow = document.getElementById('glow');
+      if (glow && window.matchMedia('(hover: hover)').matches) {
+        let raf = 0;
+        let tx = 0;
+        let ty = 0;
+        let cx = 0;
+        let cy = 0;
+        const tick = () => {
+          cx += (tx - cx) * 0.12;
+          cy += (ty - cy) * 0.12;
+          glow.style.transform = `translate3d(${cx}px, ${cy}px, 0)`;
+          raf = requestAnimationFrame(tick);
+        };
+        window.addEventListener(
+          'pointermove',
+          (e) => {
+            tx = e.clientX;
+            ty = e.clientY;
+            glow.classList.add('is-active');
+            if (!raf) raf = requestAnimationFrame(tick);
+          },
+          { passive: true },
+        );
+      }
+
+      // 磁吸按钮
+      const magnets = document.querySelectorAll<HTMLElement>('.magnetic');
+      magnets.forEach((el) => {
+        el.addEventListener('pointermove', (e) => {
+          const r = el.getBoundingClientRect();
+          const x = (e.clientX - r.left - r.width / 2) * 0.22;
+          const y = (e.clientY - r.top - r.height / 2) * 0.3;
+          el.style.transform = `translate(${x}px, ${y}px)`;
+        });
+        el.addEventListener('pointerleave', () => {
+          el.style.transform = '';
+        });
+      });
+    </script>
+  </body>
+</html>

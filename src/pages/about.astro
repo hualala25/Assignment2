@@ -1,0 +1,246 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import Nav from '../components/Nav.astro';
+import { src } from '../lib/base';
+
+const works = await getCollection('works');
+const total = works.length;
+const cats = [...new Set(works.map((w) => w.data.category))];
+---
+
+<Base title="关于 · 作品集" description="关于我与这个作品集">
+  <Nav />
+
+  <main id="main" class="page">
+    <div class="wrap about">
+      <header class="about__head reveal">
+        <div class="about__avatar" aria-hidden="true">
+          <span>卢</span>
+        </div>
+        <div>
+          <h1 class="about__title">关于我</h1>
+          <p class="about__role">西北大学 · 网络与新媒体（智能传播方向）</p>
+        </div>
+      </header>
+
+      <div class="about__body">
+        <section class="about__section reveal" data-delay="60">
+          <h2>我是谁</h2>
+          <p>
+            网络与新媒体专业大二学生，方向是智能传播。喜欢把一件具体的事做成一个能被打开的界面——
+            让文字之外的东西也参与表达。
+          </p>
+          <p>
+            这个站点是新媒体交互设计课程的作业。它不是一篇日记，而是一份作品档案：
+            每件作品都保留原文件、创作说明与可交互预览，按分类自动归集。
+          </p>
+        </section>
+
+        <section class="about__section reveal" data-delay="120">
+          <h2>在做什么</h2>
+          <ul class="facts">
+            <li>
+              <span class="facts__k">作品总数</span>
+              <span class="facts__v">{total}</span>
+            </li>
+            <li>
+              <span class="facts__k">作品分类</span>
+              <span class="facts__v">{cats.length}</span>
+            </li>
+            {
+              cats.map((c) => (
+                <li>
+                  <span class="facts__k">{c}</span>
+                  <span class="facts__v">
+                    {works.filter((w) => w.data.category === c).length}
+                  </span>
+                </li>
+              ))
+            }
+          </ul>
+        </section>
+
+        <section class="about__section reveal" data-delay="180">
+          <h2>这个站点怎么做的</h2>
+          <p>
+            站点由 <strong>Astro</strong> 构建，内容用 Markdown 写在内容集合里，
+            <strong>分类完全由 frontmatter 自动聚合</strong>——新增一件作品或一个新分类，
+            首页与分类页会自动更新，不需要改任何代码。
+          </p>
+          <p>
+            图片通过 <strong>PicGo</strong> 上传到独立的 GitHub 图床仓库，
+            与 GitHub Pages 同源，访问稳定；作品的原文件（源码与素材）保存在站点自身的
+            <code>downloads</code> 目录中，可直接下载。
+          </p>
+          <ul class="stack">
+            <li><span>Astro 6</span><span>静态站点生成</span></li>
+            <li><span>Content Collections</span><span>内容与自动分类</span></li>
+            <li><span>PicGo + GitHub Pages</span><span>图床托管</span></li>
+            <li><span>GitHub Actions</span><span>推送即自动部署</span></li>
+          </ul>
+        </section>
+
+        <section class="about__section reveal" data-delay="240">
+          <h2>找到我</h2>
+          <div class="links">
+            <a class="btn btn--ghost magnetic" href="https://github.com/hualala25" target="_blank" rel="noreferrer">
+              GitHub
+            </a>
+            <a class="btn btn--ghost magnetic" href={src('works/')}>浏览作品</a>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+</Base>
+
+<style>
+  .page {
+    padding: 70px 0 100px;
+  }
+
+  .about {
+    max-width: 780px;
+  }
+
+  .about__head {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    padding-bottom: 34px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 42px;
+  }
+
+  .about__avatar {
+    width: 68px;
+    height: 68px;
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: linear-gradient(145deg, var(--primary-soft), var(--surface-strong));
+    border: 1px solid var(--primary-soft);
+    box-shadow: var(--shadow-md);
+  }
+
+  .about__avatar span {
+    font-family: var(--font-serif);
+    font-size: 27px;
+    color: var(--primary-deep);
+  }
+
+  .about__title {
+    font-family: var(--font-serif);
+    font-size: clamp(28px, 4.6vw, 38px);
+  }
+
+  .about__role {
+    margin-top: 8px;
+    font-size: 14px;
+    color: var(--ink-soft);
+  }
+
+  .about__section {
+    margin-bottom: 44px;
+  }
+
+  .about__section h2 {
+    font-family: var(--font-serif);
+    font-size: 21px;
+    margin-bottom: 16px;
+    padding-left: 13px;
+    border-left: 3px solid var(--primary);
+  }
+
+  .about__section p {
+    margin-bottom: 14px;
+    color: var(--ink-soft);
+    line-height: 1.9;
+  }
+
+  .about__section strong {
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  .about__section code {
+    font-family: var(--font-mono, 'SF Mono', Menlo, monospace);
+    font-size: 0.88em;
+    background: var(--surface);
+    padding: 2px 7px;
+    border-radius: 5px;
+    color: var(--primary-deep);
+  }
+
+  .facts {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .facts li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 12px 18px;
+    background: var(--bg-elevated);
+  }
+
+  .facts li + li {
+    border-top: 1px solid var(--line);
+  }
+
+  .facts__k {
+    font-size: 14px;
+    color: var(--ink-soft);
+  }
+
+  .facts__v {
+    font-family: var(--font-serif);
+    font-size: 19px;
+    color: var(--primary-deep);
+  }
+
+  .stack {
+    list-style: none;
+    margin: 18px 0 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 10px;
+  }
+
+  .stack li {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 14px 16px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--bg-elevated);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .stack li span:first-child {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink);
+  }
+
+  .stack li span:last-child {
+    font-size: 12.5px;
+    color: var(--ink-faint);
+  }
+
+  .links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+</style>

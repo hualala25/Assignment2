@@ -1,0 +1,62 @@
+---
+import { src } from '../lib/base';
+
+interface Props {
+  active?: 'home' | 'works';
+}
+
+const { active } = Astro.props;
+const path = Astro.url.pathname;
+
+const links = [
+  { href: src(''), label: '首页', key: 'home' },
+  { href: src('works/'), label: '全部作品', key: 'works' },
+  { href: src('about/'), label: '关于', key: 'about' },
+];
+
+const isActive = (key: string) =>
+  key === 'home' ? path === src('') || path === '/' : path.startsWith(src(key));
+---
+
+<nav class="nav" data-nav>
+  <div class="wrap nav__inner">
+    <a class="nav__brand" href={src('')}>
+      作品集 <em>Assignment2</em>
+    </a>
+
+    <ul class="nav__links" data-nav-links>
+      {
+        links.map((l) => (
+          <li>
+            <a
+              class="nav__link"
+              href={l.href}
+              aria-current={isActive(l.key) ? 'page' : undefined}
+            >
+              {l.label}
+            </a>
+          </li>
+        ))
+      }
+      <li>
+        <a class="nav__link" href="https://github.com/hualala25" target="_blank" rel="noreferrer">
+          GitHub
+        </a>
+      </li>
+    </ul>
+
+    <button class="theme-toggle" data-theme-toggle aria-label="切换深浅色主题">
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" stroke-linejoin="round"></path>
+      </svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <circle cx="12" cy="12" r="4.2"></circle>
+        <path d="M12 2.5v2M12 19.5v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M2.5 12h2M19.5 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4" stroke-linecap="round"></path>
+      </svg>
+    </button>
+
+    <button class="nav__burger" data-burger aria-label="打开菜单" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>

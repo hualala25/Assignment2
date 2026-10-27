@@ -1,0 +1,80 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import Nav from '../../components/Nav.astro';
+import WorkCard from '../../components/WorkCard.astro';
+import { src } from '../../lib/base';
+
+const works = (await getCollection('works')).sort(
+  (a, b) => a.data.order - b.data.order || b.data.date.valueOf() - a.data.date.valueOf(),
+);
+
+const categories = [...new Set(works.map((w) => w.data.category))];
+---
+
+<Base title="全部作品 · 作品集" description="按分类浏览全部作品与论文">
+  <Nav />
+
+  <main id="main" class="page">
+    <div class="wrap">
+      <header class="page__head reveal">
+        <h1 class="page__title">全部作品</h1>
+        <p class="page__sub">
+          共 {works.length} 件 · {categories.length} 个分类
+        </p>
+        <ul class="cats">
+          {
+            categories.map((c) => (
+              <li>
+                <a class="tag" href={src(`works/category/${c}/`)}>
+                  {c}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </header>
+
+      <div class="work-grid">
+        {
+          works.map((w, i) => (
+            <WorkCard work={w} delay={(i % 3) * 80} />
+          ))
+        }
+      </div>
+    </div>
+  </main>
+</Base>
+
+<style>
+  .page {
+    padding: 66px 0 100px;
+  }
+
+  .page__title {
+    font-family: var(--font-serif);
+    font-size: clamp(30px, 5vw, 44px);
+  }
+
+  .page__sub {
+    margin-top: 10px;
+    font-size: 14px;
+    color: var(--ink-faint);
+  }
+
+  .cats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    list-style: none;
+    margin: 22px 0 0;
+    padding: 0;
+  }
+
+  .work-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 24px;
+    margin-top: 38px;
+  }
+</style>

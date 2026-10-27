@@ -1,0 +1,83 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../../layouts/Base.astro';
+import Nav from '../../../components/Nav.astro';
+import WorkCard from '../../../components/WorkCard.astro';
+import { src } from '../../../lib/base';
+import { sortCategories } from '../../../content.config';
+
+export async function getStaticPaths() {
+  const works = await getCollection('works');
+  const categories = sortCategories([...new Set(works.map((w) => w.data.category))]);
+  return categories.map((cat) => ({
+    params: { cat },
+    props: { cat, works: works.filter((w) => w.data.category === cat) },
+  }));
+}
+
+const { cat, works } = Astro.props;
+const sorted = [...works].sort(
+  (a, b) => a.data.order - b.data.order || b.data.date.valueOf() - a.data.date.valueOf(),
+);
+---
+
+<Base title={`${cat} · 作品集`} description={`分类：${cat}`}>
+  <Nav />
+
+  <main id="main" class="page">
+    <div class="wrap">
+      <header class="page__head reveal">
+        <a class="back" href={src('works/')}>← 返回作品列表</a>
+        <h1 class="page__title">{cat}</h1>
+        <p class="page__sub">共 {sorted.length} 件</p>
+      </header>
+
+      <div class="work-grid">
+        {
+          sorted.map((w, i) => (
+            <WorkCard work={w} delay={(i % 3) * 80} />
+          ))
+        }
+      </div>
+    </div>
+  </main>
+</Base>
+
+<style>
+  .page {
+    padding: 46px 0 100px;
+  }
+
+  .back {
+    display: inline-block;
+    font-size: 13.5px;
+    color: var(--ink-soft);
+    margin-bottom: 26px;
+    transition:
+      color 0.28s ease,
+      transform 0.28s ease;
+  }
+
+  .back:hover {
+    color: var(--primary-deep);
+    transform: translateX(-3px);
+  }
+
+  .page__title {
+    font-family: var(--font-serif);
+    font-size: clamp(30px, 5vw, 44px);
+  }
+
+  .page__sub {
+    margin-top: 10px;
+    font-size: 14px;
+    color: var(--ink-faint);
+  }
+
+  .work-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 24px;
+    margin-top: 38px;
+  }
+</style>

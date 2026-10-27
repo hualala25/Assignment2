@@ -1,0 +1,475 @@
+---
+import { getCollection, render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import Nav from '../../components/Nav.astro';
+import { src } from '../../lib/base';
+
+export async function getStaticPaths() {
+  const works = await getCollection('works');
+  return works.map((w) => ({ params: { id: w.id }, props: { work: w } }));
+}
+
+const { work } = Astro.props;
+const { Content } = await render(work);
+const d = work.data;
+const isPaper = d.type === 'paper';
+
+const all = (await getCollection('works')).sort(
+  (a, b) => a.data.order - b.data.order || b.data.date.valueOf() - a.data.date.valueOf(),
+);
+const idx = all.findIndex((w) => w.id === work.id);
+const prev = idx > 0 ? all[idx - 1] : undefined;
+const next = idx < all.length - 1 ? all[idx + 1] : undefined;
+
+const fmt = (date: Date) =>
+  `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`;
+---
+
+<Base title={`${d.title} · 作品集`} description={d.summary}>
+  <Nav />
+
+  <main id="main" class="detail">
+    <!-- 阅读进度条 -->
+    <div class="progress" aria-hidden="true"><span data-progress></span></div>
+
+    <div class="wrap detail__inner">
+      <a class="back" href={src('works/')}>← 返回作品列表</a>
+
+      <header class="detail__head reveal">
+        <div class="detail__tags">
+          <span class="tag">{d.category}</span>
+          {
+            d.tags.map((t) => (
+              <span class="tag tag--plain">{t}</span>
+            ))
+          }
+        </div>
+
+        <h1 class="detail__title">{d.title}</h1>
+        <p class="detail__summary">{d.summary}</p>
+
+        <dl class="detail__meta">
+          <div>
+            <dt>日期</dt>
+            <dd>{fmt(d.date)}</dd>
+          </div>
+          {
+            d.venue && (
+              <div>
+                <dt>发表</dt>
+                <dd>{d.venue}</dd>
+              </div>
+            )
+          }
+          {
+            isPaper && d.keywords && (
+              <div>
+                <dt>关键词</dt>
+                <dd>{d.keywords.join(' · ')}</dd>
+              </div>
+            )
+          }
+        </dl>
+
+        <div class="detail__actions">
+          {
+            d.embed && d.preview && (
+              <a class="btn btn--primary magnetic" href={d.preview} target="_blank" rel="noreferrer">
+                打开在线预览
+              </a>
+            )
+          }
+          {
+            d.download && (
+              <a
+                class="btn btn--primary magnetic"
+                href={src(`downloads/${d.download}`)}
+                download
+              >
+                下载原文件{d.downloadSize ? `（${d.downloadSize}）` : ''}
+              </a>
+            )
+          }
+          {
+            d.pdf && (
+              <a class="btn btn--ghost magnetic" href={src(`downloads/${d.pdf}`)} download>
+                下载 PDF
+              </a>
+            )
+          }
+          {
+            d.links.map((l) => (
+              <a class="btn btn--ghost magnetic" href={l.url} target="_blank" rel="noreferrer">
+                {l.label}
+              </a>
+            ))
+          }
+        </div>
+      </header>
+
+      {
+        d.embed && d.preview && (
+          <div class="detail__preview reveal">
+            <iframe
+              src={d.preview}
+              title={`${d.title} 在线预览`}
+              loading="lazy"
+              allowfullscreen
+            />
+          </div>
+        )
+      }
+
+      {
+        d.cover && !d.embed && (
+          <figure class="detail__cover reveal">
+            <img src={d.cover} alt={`${d.title} 封面`} loading="lazy" decoding="async" />
+          </figure>
+        )
+      }
+
+      <article class="prose reveal">
+        <Content />
+      </article>
+
+      <!-- 上下篇 -->
+      <nav class="pager" aria-label="作品导航">
+        {
+          prev ? (
+            <a class="pager__item card" href={src(`works/${prev.id}/`)}>
+              <span class="pager__label">← 上一件</span>
+              <span class="pager__title">{prev.data.title}</span>
+            </a>
+          ) : (
+            <span />
+          )
+        }
+        {
+          next ? (
+            <a class="pager__item card pager__item--next" href={src(`works/${next.id}/`)}>
+              <span class="pager__label">下一件 →</span>
+              <span class="pager__title">{next.data.title}</span>
+            </a>
+          ) : (
+            <span />
+          )
+        }
+      </nav>
+    </div>
+  </main>
+
+  <script>
+    const bar = document.querySelector<HTMLElement>('[data-progress]');
+    if (bar) {
+      const update = () => {
+        const h = document.documentElement.scrollHeight - window.innerHeight;
+        const p = h > 0 ? (window.scrollY / h) * 100 : 0;
+        bar.style.width = `${Math.min(100, Math.max(0, p))}%`;
+      };
+      update();
+      window.addEventListener('scroll', update, { passive: true });
+      window.addEventListener('resize', update);
+    }
+  </script>
+</Base>
+
+<style>
+  .detail {
+    padding: 46px 0 100px;
+  }
+
+  .progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    z-index: 60;
+    background: transparent;
+    pointer-events: none;
+  }
+
+  .progress span {
+    display: block;
+    height: 100%;
+    width: 0;
+    background: var(--primary);
+    border-radius: 0 2px 2px 0;
+    transition: width 0.1s linear;
+  }
+
+  .back {
+    display: inline-block;
+    font-size: 13.5px;
+    color: var(--ink-soft);
+    margin-bottom: 30px;
+    transition:
+      color 0.28s ease,
+      transform 0.28s ease;
+  }
+
+  .back:hover {
+    color: var(--primary-deep);
+    transform: translateX(-3px);
+  }
+
+  .detail__inner {
+    max-width: 860px;
+  }
+
+  .detail__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-bottom: 20px;
+  }
+
+  .tag--plain {
+    background: transparent;
+    border-color: var(--line);
+    color: var(--ink-faint);
+  }
+
+  .detail__title {
+    font-family: var(--font-serif);
+    font-size: clamp(28px, 4.6vw, 42px);
+    line-height: 1.3;
+  }
+
+  .detail__summary {
+    margin-top: 18px;
+    font-size: 16px;
+    line-height: 1.85;
+    color: var(--ink-soft);
+  }
+
+  .detail__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 26px;
+    margin: 28px 0 0;
+    padding: 20px 0;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .detail__meta dt {
+    font-size: 12px;
+    color: var(--ink-faint);
+    margin-bottom: 3px;
+  }
+
+  .detail__meta dd {
+    margin: 0;
+    font-size: 14px;
+    color: var(--ink);
+  }
+
+  .detail__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 28px;
+  }
+
+  .detail__preview {
+    margin: 34px 0 0;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow-lg);
+    background: var(--bg-elevated);
+  }
+
+  .detail__preview iframe {
+    display: block;
+    width: 100%;
+    height: 560px;
+    border: 0;
+  }
+
+  @media (max-width: 720px) {
+    .detail__preview iframe {
+      height: 380px;
+    }
+  }
+
+  .detail__cover {
+    margin: 34px 0 0;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow-lg);
+  }
+
+  /* 正文排版 */
+  .prose {
+    margin-top: 40px;
+    font-size: 15.5px;
+    line-height: 1.9;
+    color: var(--ink);
+  }
+
+  .prose :global(h2) {
+    font-family: var(--font-serif);
+    font-size: 23px;
+    margin: 44px 0 16px;
+    padding-left: 14px;
+    border-left: 3px solid var(--primary);
+  }
+
+  .prose :global(h3) {
+    font-size: 18px;
+    margin: 30px 0 12px;
+  }
+
+  .prose :global(p) {
+    margin: 0 0 18px;
+    color: var(--ink-soft);
+  }
+
+  .prose :global(ul),
+  .prose :global(ol) {
+    margin: 0 0 20px;
+    padding-left: 22px;
+    color: var(--ink-soft);
+  }
+
+  .prose :global(li) {
+    margin-bottom: 8px;
+  }
+
+  .prose :global(li::marker) {
+    color: var(--primary);
+  }
+
+  .prose :global(blockquote) {
+    margin: 26px 0;
+    padding: 18px 22px;
+    background: var(--surface);
+    border-left: 3px solid var(--primary-soft);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    color: var(--ink-soft);
+    font-style: normal;
+  }
+
+  .prose :global(blockquote p:last-child) {
+    margin-bottom: 0;
+  }
+
+  .prose :global(strong) {
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  .prose :global(a) {
+    color: var(--primary-deep);
+    border-bottom: 1px solid var(--primary-soft);
+    transition: border-color 0.25s ease;
+  }
+
+  .prose :global(a:hover) {
+    border-bottom-color: var(--primary);
+  }
+
+  .prose :global(code) {
+    font-family: var(--font-mono, 'SF Mono', Menlo, monospace);
+    font-size: 0.88em;
+    background: var(--surface);
+    padding: 2px 6px;
+    border-radius: 5px;
+    color: var(--primary-deep);
+  }
+
+  .prose :global(pre) {
+    background: var(--surface);
+    padding: 18px 20px;
+    border-radius: var(--radius);
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    margin: 0 0 22px;
+  }
+
+  .prose :global(pre code) {
+    background: none;
+    padding: 0;
+    color: var(--ink);
+  }
+
+  .prose :global(img) {
+    border-radius: var(--radius);
+    margin: 0 0 22px;
+    border: 1px solid var(--line);
+  }
+
+  .prose :global(hr) {
+    border: none;
+    border-top: 1px solid var(--line);
+    margin: 36px 0;
+  }
+
+  .prose :global(table) {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0 0 22px;
+    font-size: 14px;
+  }
+
+  .prose :global(th),
+  .prose :global(td) {
+    border: 1px solid var(--line);
+    padding: 9px 12px;
+    text-align: left;
+  }
+
+  .prose :global(th) {
+    background: var(--surface);
+    font-weight: 500;
+  }
+
+  /* 上下篇 */
+  .pager {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 60px;
+    padding-top: 40px;
+    border-top: 1px solid var(--line);
+  }
+
+  .pager__item {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 18px 20px;
+  }
+
+  .pager__item--next {
+    text-align: right;
+  }
+
+  .pager__label {
+    font-size: 12.5px;
+    color: var(--ink-faint);
+  }
+
+  .pager__title {
+    font-family: var(--font-serif);
+    font-size: 16.5px;
+    color: var(--ink);
+    transition: color 0.28s ease;
+  }
+
+  .pager__item:hover .pager__title {
+    color: var(--primary-deep);
+  }
+
+  @media (max-width: 640px) {
+    .pager {
+      grid-template-columns: 1fr;
+    }
+    .pager__item--next {
+      text-align: left;
+    }
+  }
+</style>
